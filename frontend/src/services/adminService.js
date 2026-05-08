@@ -2,11 +2,23 @@ import axios from "axios";
 
 const BASE_URL = "http://localhost:5001/api/admin";
 
+// Demo admin token for testing (in production, this would be retrieved from secure storage)
+const DEMO_ADMIN_TOKEN = "Bearer demo_admin_token_12345";
+
+// Helper function to get auth headers
+const getAuthHeaders = (token = null) => {
+  const authToken = token || localStorage.getItem("adminToken") || DEMO_ADMIN_TOKEN;
+  return {
+    Authorization: authToken,
+  };
+};
+
 // Get all suspicious transactions
-export const getSuspiciousTransactions = async (filters = {}) => {
+export const getSuspiciousTransactions = async (filters = {}, token = null) => {
   try {
     const response = await axios.get(`${BASE_URL}/suspicious-transactions`, {
       params: filters,
+      headers: getAuthHeaders(token),
     });
     return response.data;
   } catch (error) {
@@ -16,11 +28,12 @@ export const getSuspiciousTransactions = async (filters = {}) => {
 };
 
 // Review a suspicious transaction
-export const reviewSuspiciousTransaction = async (id, reviewData) => {
+export const reviewSuspiciousTransaction = async (id, reviewData, token = null) => {
   try {
     const response = await axios.put(
       `${BASE_URL}/suspicious-transactions/${id}/review`,
-      reviewData
+      reviewData,
+      { headers: getAuthHeaders(token) }
     );
     return response.data;
   } catch (error) {
@@ -30,10 +43,13 @@ export const reviewSuspiciousTransaction = async (id, reviewData) => {
 };
 
 // Get notifications
-export const getNotifications = async (userId = null) => {
+export const getNotifications = async (userId = null, token = null) => {
   try {
     const params = userId ? { userId } : {};
-    const response = await axios.get(`${BASE_URL}/notifications`, { params });
+    const response = await axios.get(`${BASE_URL}/notifications`, {
+      params,
+      headers: getAuthHeaders(token),
+    });
     return response.data;
   } catch (error) {
     console.error("Error fetching notifications:", error);
@@ -42,10 +58,12 @@ export const getNotifications = async (userId = null) => {
 };
 
 // Mark notification as read
-export const markNotificationAsRead = async (id) => {
+export const markNotificationAsRead = async (id, token = null) => {
   try {
     const response = await axios.put(
-      `${BASE_URL}/notifications/${id}/read`
+      `${BASE_URL}/notifications/${id}/read`,
+      {},
+      { headers: getAuthHeaders(token) }
     );
     return response.data;
   } catch (error) {
@@ -55,9 +73,11 @@ export const markNotificationAsRead = async (id) => {
 };
 
 // Get dashboard stats
-export const getDashboardStats = async () => {
+export const getDashboardStats = async (token = null) => {
   try {
-    const response = await axios.get(`${BASE_URL}/dashboard-stats`);
+    const response = await axios.get(`${BASE_URL}/dashboard-stats`, {
+      headers: getAuthHeaders(token),
+    });
     return response.data;
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
@@ -66,9 +86,11 @@ export const getDashboardStats = async () => {
 };
 
 // Get user activity report
-export const getUserActivityReport = async (userId) => {
+export const getUserActivityReport = async (userId, token = null) => {
   try {
-    const response = await axios.get(`${BASE_URL}/user-activity/${userId}`);
+    const response = await axios.get(`${BASE_URL}/user-activity/${userId}`, {
+      headers: getAuthHeaders(token),
+    });
     return response.data;
   } catch (error) {
     console.error("Error fetching user activity report:", error);

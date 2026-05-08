@@ -8,8 +8,11 @@ const PORT = process.env.PORT || 5001; // 3. Define the port
 app.use(express.json());
 app.use(cors());
 
-// Database connection
-require("./config/db")();
+// Database connection (non-blocking - continues even if DB fails)
+let dbConnected = false;
+require("./config/db")().then((result) => {
+  dbConnected = result;
+});
 
 // Import Models (ensures they are registered with MongoDB)
 require("./models/User");
@@ -24,7 +27,12 @@ app.use("/api/admin", require("./routes/adminRoutes"));
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
-  res.status(200).json({ success: true, message: "Server is running" });
+  res.status(200).json({ 
+    success: true, 
+    message: "Server is running",
+    databaseConnected: dbConnected,
+    mode: dbConnected ? "production" : "demo (no persistent DB)"
+  });
 });
 
 // 404 handler
@@ -47,4 +55,6 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   // 4. Use 'app' (not 'server') to listen
   console.log(`✅ Server running on port ${PORT}`);
+  console.log(`📍 API URL: http://localhost:${PORT}/api`);
+  console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
 });
