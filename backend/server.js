@@ -1,19 +1,28 @@
 require("dotenv").config(); // Load environment variables
-const express = require("express"); // 1. Import express
-const app = express(); // 2. Initialize the app
-const PORT = process.env.PORT || 5001; // 3. Define the port
+const express = require("express");
+const connectDB = require("./config/db");
+
+const app = express();
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(express.json());
 app.use(require("cors")());
 
-// Database connection
-require("./config/db")();
-
 // Routes
+app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/wallet", require("./routes/walletRoutes"));
 
-app.listen(PORT, () => {
-  // 4. Use 'app' (not 'server') to listen
-  console.log(`Server running on port ${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Server failed to start:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
