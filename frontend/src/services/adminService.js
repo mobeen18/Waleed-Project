@@ -1,12 +1,25 @@
 import axios from "axios";
+import { getToken } from "../controller/authController";
 
 const BASE_URL = "http://localhost:5001/api/admin";
+
+const getAuthConfig = () => {
+  const token = getToken();
+  return {
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {},
+  };
+};
 
 // Get all suspicious transactions
 export const getSuspiciousTransactions = async (filters = {}) => {
   try {
     const response = await axios.get(`${BASE_URL}/suspicious-transactions`, {
       params: filters,
+      ...getAuthConfig(),
     });
     return response.data;
   } catch (error) {
@@ -20,7 +33,8 @@ export const reviewSuspiciousTransaction = async (id, reviewData) => {
   try {
     const response = await axios.put(
       `${BASE_URL}/suspicious-transactions/${id}/review`,
-      reviewData
+      reviewData,
+      getAuthConfig()
     );
     return response.data;
   } catch (error) {
@@ -33,7 +47,10 @@ export const reviewSuspiciousTransaction = async (id, reviewData) => {
 export const getNotifications = async (userId = null) => {
   try {
     const params = userId ? { userId } : {};
-    const response = await axios.get(`${BASE_URL}/notifications`, { params });
+    const response = await axios.get(`${BASE_URL}/notifications`, {
+      params,
+      ...getAuthConfig(),
+    });
     return response.data;
   } catch (error) {
     console.error("Error fetching notifications:", error);
@@ -45,7 +62,9 @@ export const getNotifications = async (userId = null) => {
 export const markNotificationAsRead = async (id) => {
   try {
     const response = await axios.put(
-      `${BASE_URL}/notifications/${id}/read`
+      `${BASE_URL}/notifications/${id}/read`,
+      null,
+      getAuthConfig()
     );
     return response.data;
   } catch (error) {
@@ -57,7 +76,7 @@ export const markNotificationAsRead = async (id) => {
 // Get dashboard stats
 export const getDashboardStats = async () => {
   try {
-    const response = await axios.get(`${BASE_URL}/dashboard-stats`);
+    const response = await axios.get(`${BASE_URL}/dashboard-stats`, getAuthConfig());
     return response.data;
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
@@ -68,7 +87,7 @@ export const getDashboardStats = async () => {
 // Get user activity report
 export const getUserActivityReport = async (userId) => {
   try {
-    const response = await axios.get(`${BASE_URL}/user-activity/${userId}`);
+    const response = await axios.get(`${BASE_URL}/user-activity/${userId}`, getAuthConfig());
     return response.data;
   } catch (error) {
     console.error("Error fetching user activity report:", error);

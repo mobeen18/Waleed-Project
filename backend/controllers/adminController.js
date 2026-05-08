@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const SuspiciousTransaction = require("../models/SuspiciousTransaction");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
+const Wallet = require("../models/Wallet");
 const Transaction = require("../models/Transaction");
 
 // Get all suspicious transactions
@@ -21,9 +22,9 @@ const getSuspiciousTransactions = async (req, res) => {
     }
 
     const suspicious = await SuspiciousTransaction.find(query)
-      .populate("userId", "username email")
+      .populate("userId", "name email")
       .populate("transactionId")
-      .populate("reviewedBy", "username")
+      .populate("reviewedBy", "name")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -225,19 +226,28 @@ const getUserActivityReport = async (req, res) => {
       userId,
     }).populate("transactionId");
 
-    const recentTransactions = await Transaction.find({
-      $or: [{ sourceWalletId: userId }, { targetWalletId: userId }],
-    }).limit(20);
+    const userWallet = await Wallet.findOne({ userId: user._id });
+    const walletId = userWallet ? userWallet._id : null;
 
-    const notifications = await Notification.find({ userId }).limit(20);
+    const recentTransactions = walletId
+      ? await Transaction.find({
+          $or: [{ sourceWalletId: walletId }, { targetWalletId: walletId }],
+        })
+          .sort({ createdAt: -1 })
+          .limit(20)
+      : [];
+
+    const notifications = await Notification.find({ userId: user._id })
+      .sort({ createdAt: -1 })
+      .limit(20);
 
     return res.status(200).json({
       success: true,
       user: {
         id: user._id,
-        username: user.username,
+        name: user.name,
         email: user.email,
-        suspiciousActivityCount: user.suspiciousActivityCount,
+        suspiciousActivityCount: suspiciousTransactions.length,
       },
       suspiciousTransactions,
       recentTransactions,

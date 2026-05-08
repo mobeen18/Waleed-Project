@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   getSuspiciousTransactions,
   reviewSuspiciousTransaction,
@@ -36,25 +36,6 @@ function AdminDashboard() {
   // Error handling
   const [error, setError] = useState("");
 
-  // Fetch dashboard stats on mount
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
-
-  // Fetch suspicious transactions when filter changes
-  useEffect(() => {
-    if (activeTab === "suspicious") {
-      fetchSuspiciousTransactions();
-    }
-  }, [activeTab, suspiciousFilter]);
-
-  // Fetch notifications when active tab changes
-  useEffect(() => {
-    if (activeTab === "notifications") {
-      fetchNotifications();
-    }
-  }, [activeTab]);
-
   const fetchDashboardStats = async () => {
     try {
       setLoadingStats(true);
@@ -70,7 +51,7 @@ function AdminDashboard() {
     }
   };
 
-  const fetchSuspiciousTransactions = async () => {
+  const fetchSuspiciousTransactions = useCallback(async () => {
     try {
       setLoadingSuspicious(true);
       const filters = {};
@@ -88,7 +69,7 @@ function AdminDashboard() {
     } finally {
       setLoadingSuspicious(false);
     }
-  };
+  }, [suspiciousFilter]);
 
   const fetchNotifications = async () => {
     try {
@@ -104,6 +85,25 @@ function AdminDashboard() {
       setLoadingNotifications(false);
     }
   };
+
+  // Fetch dashboard stats on mount
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  // Fetch suspicious transactions when filter changes
+  useEffect(() => {
+    if (activeTab === "suspicious") {
+      fetchSuspiciousTransactions();
+    }
+  }, [activeTab, fetchSuspiciousTransactions]);
+
+  // Fetch notifications when active tab changes
+  useEffect(() => {
+    if (activeTab === "notifications") {
+      fetchNotifications();
+    }
+  }, [activeTab]);
 
   const handleReviewTransaction = async (transactionId, approved) => {
     try {
@@ -294,7 +294,7 @@ function AdminDashboard() {
                     <span style={styles.severity}>{tx.severity.toUpperCase()}</span>
                     <span style={styles.rule}>{tx.ruleTriggered}</span>
                   </div>
-                  <p><strong>User:</strong> {tx.userId.username}</p>
+                  <p><strong>User:</strong> {tx.userId?.name || tx.userId?.email || "Unknown"}</p>
                   <p><strong>Reason:</strong> {tx.reason}</p>
                   <p><strong>Date:</strong> {new Date(tx.createdAt).toLocaleString()}</p>
 
@@ -409,7 +409,7 @@ function AdminDashboard() {
 
           {userActivityReport && (
             <div style={styles.userReportContainer}>
-              <h3>User: {userActivityReport.user.username}</h3>
+              <h3>User: {userActivityReport.user.name || userActivityReport.user.email}</h3>
               <p>Email: {userActivityReport.user.email}</p>
               <p>
                 Suspicious Activity Count:{" "}
