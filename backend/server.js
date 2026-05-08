@@ -1,28 +1,43 @@
 require("dotenv").config(); // Load environment variables
-const express = require("express");
-const connectDB = require("./config/db");
-
-const app = express();
-const PORT = process.env.PORT || 5001;
+const express = require("express"); // 1. Import express
+const app = express(); // 2. Initialize the app
+const PORT = process.env.PORT || 5001; // 3. Define the port
 
 // Middleware
 app.use(express.json());
 app.use(require("cors")());
 
+// Database connection
+require("./config/db")();
+
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/wallet", require("./routes/walletRoutes"));
+app.use("/api/admin", require("./routes/adminRoutes"));
 
-const startServer = async () => {
-  try {
-    await connectDB();
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error("Server failed to start:", error);
-    process.exit(1);
-  }
-};
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ success: true, message: "Server is running" });
+});
 
-startServer();
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Endpoint not found",
+  });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("Server error:", err);
+  res.status(500).json({
+    success: false,
+    message: "Internal server error",
+  });
+});
+
+app.listen(PORT, () => {
+  // 4. Use 'app' (not 'server') to listen
+  console.log(`Server running on port ${PORT}`);
+});

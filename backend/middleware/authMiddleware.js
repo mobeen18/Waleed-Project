@@ -18,7 +18,7 @@ const protect = (req, res, next) => {
 
     req.user = decoded;
 
- next();
+    next();
   } catch (error) {
     // Token is invalid or expired
     return res.status(401).json({
