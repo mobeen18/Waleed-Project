@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 
 function TransactionsPage() {
   return (
@@ -11,9 +10,6 @@ function TransactionsPage() {
           <p>Transaction records are loaded from the wallet system.</p>
           <p>For now, this page is a module placeholder while your wallet data populates.</p>
         </div>
-        <Link to="/dashboard" style={styles.button}>
-          Back to Dashboard
-        </Link>
       </div>
     </div>
   );

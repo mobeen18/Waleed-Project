@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 
 function ExpensesPage() {
   return (
@@ -11,9 +10,6 @@ function ExpensesPage() {
           <p>This section is reserved for expenses and budget management.</p>
           <p>Once your wallet is active, this page will display expense tracking tools.</p>
         </div>
-        <Link to="/dashboard" style={styles.button}>
-          Back to Dashboard
-        </Link>
       </div>
     </div>
   );

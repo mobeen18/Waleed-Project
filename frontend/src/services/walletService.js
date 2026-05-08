@@ -1,7 +1,8 @@
 import axios from "axios";
 import { getToken } from "../controller/authController";
+import API_URL from "../config/api";
 
-const BASE_URL = "http://localhost:5001/api/wallet";
+const BASE_URL = `${API_URL}/wallet`;
 
 const getAuthConfig = () => {
   const token = getToken();

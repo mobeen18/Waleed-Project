@@ -1,6 +1,5 @@
 import React from "react";
 import { getCurrentUser } from "../controller/authController";
-import { Link } from "react-router-dom";
 
 function ProfilePage() {
   const user = getCurrentUser();
@@ -29,10 +28,6 @@ function ProfilePage() {
         ) : (
           <p style={styles.message}>No profile information is available right now.</p>
         )}
-
-        <Link to="/dashboard" style={styles.button}>
-          Back to Dashboard
-        </Link>
       </div>
     </div>
   );
@@ -83,15 +78,6 @@ const styles = {
   message: {
     marginBottom: "1.5rem",
     color: "#f8fafc",
-  },
-  button: {
-    display: "inline-block",
-    padding: "1rem 1.5rem",
-    borderRadius: "14px",
-    background: "#6366f1",
-    color: "white",
-    textDecoration: "none",
-    fontWeight: "700",
   },
 };
 

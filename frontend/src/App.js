@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from "react-router-dom";
 import WalletDashboard from "./pages/WalletDashboard";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -7,20 +7,26 @@ import ProfilePage from "./pages/ProfilePage";
 import TransactionsPage from "./pages/TransactionsPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import AdminDashboard from "./pages/admin";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Navbar from "./components/Navbar";
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const showNavbar = !["/login", "/register"].includes(location.pathname);
+
   return (
-    <Router>
+    <>
+      {showNavbar && <Navbar />}
       <Routes>
-        <Route path="/dashboard" element={<WalletDashboard />} />
+        <Route path="/dashboard" element={<ProtectedRoute><WalletDashboard /></ProtectedRoute>} />
         <Route path="/wallet" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/transactions" element={<TransactionsPage />} />
-        <Route path="/expenses" element={<ExpensesPage />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/transactions" element={<ProtectedRoute><TransactionsPage /></ProtectedRoute>} />
+        <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route
           path="*"
           element={
@@ -33,6 +39,14 @@ function App() {
           }
         />
       </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }
