@@ -16,6 +16,7 @@
 // ============================================================
 
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { getWalletSummary, getWallets } from "../services/walletService";
 import DepositModal from "../components/DepositModal";
 import WithdrawModal from "../components/WithdrawModal";
@@ -141,10 +142,21 @@ function WalletDashboard() {
 
       {/* ── Page Header ── */}
       <div className="dashboard-header">
-        <h1 className="dashboard-title">
-          MediLease <span>Wallet</span>
-        </h1>
+        <div>
+          <h1 className="dashboard-title">
+            MediLease <span>Wallet</span>
+          </h1>
+          <p className="dashboard-subtitle">Access wallet, profile, transactions, expenses, and admin tools.</p>
+        </div>
         <span className="header-badge">● Demo</span>
+      </div>
+
+      <div className="dashboard-nav">
+        <Link to="/dashboard" className="nav-link">Wallet</Link>
+        <Link to="/profile" className="nav-link">Profile</Link>
+        <Link to="/transactions" className="nav-link">Transactions</Link>
+        <Link to="/expenses" className="nav-link">Expenses</Link>
+        <Link to="/admin" className="nav-link">Admin</Link>
       </div>
 
       {/* ── Stats Cards ── */}

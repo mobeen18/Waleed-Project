@@ -1,24 +1,54 @@
 const mongoose = require("mongoose");
+const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+  const remoteUri = process.env.MONGODB_URI;
+  const localUri = "mongodb://127.0.0.1:27017/waleed_project";
+  const uriToTry = remoteUri || localUri;
+
+  const connect = async (uri) => {
+    const conn = await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 5000,
     });
-
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    return true;
+  };
+
+  const connectMemoryDb = async () => {
+    const mongod = await MongoMemoryServer.create();
+    const uri = mongod.getUri();
+    const conn = await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("✅ MongoDB Memory Server connected: running in-memory database");
+    return true;
+  };
+
+  try {
+    await connect(uriToTry);
     return true;
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
-    console.warn("⚠️  Running in DEMO MODE without persistent database.");
-    console.warn("💡 To use MongoDB:");
-    console.warn("   1. Install MongoDB locally: https://www.mongodb.com/try/download/community");
-    console.warn("   2. Start MongoDB service");
-    console.warn("   3. Or update MONGODB_URI in .env to a working connection");
-    return false;
+    if (remoteUri && remoteUri !== localUri) {
+      try {
+        console.log("Trying local MongoDB fallback at mongodb://127.0.0.1:27017/waleed_project");
+        await connect(localUri);
+        return true;
+      } catch (fallbackError) {
+        console.error("❌ Local MongoDB fallback failed:", fallbackError.message);
+        console.log("Starting in-memory MongoDB server as fallback.");
+        await connectMemoryDb();
+        return true;
+      }
+    } else {
+      console.log("Starting in-memory MongoDB server as fallback.");
+      await connectMemoryDb();
+      return true;
+    }
   }
 };
 

@@ -2,12 +2,10 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    username: {
+    name: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
-      minlength: 3,
     },
     email: {
       type: String,
@@ -15,35 +13,27 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, "Please provide a valid email"],
     },
     password: {
       type: String,
       required: true,
-      minlength: 6,
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "doctor"],
       default: "user",
     },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    accountStatus: {
+    phone: {
       type: String,
-      enum: ["active", "suspended", "locked"],
-      default: "active",
     },
-    suspiciousActivityCount: {
-      type: Number,
-      default: 0,
-      min: 0,
+    cnic: {
+      type: String,
     },
-    lastLogin: {
-      type: Date,
-      default: null,
+    clinicName: {
+      type: String,
+    },
+    city: {
+      type: String,
     },
   },
   {

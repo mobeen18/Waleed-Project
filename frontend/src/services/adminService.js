@@ -1,24 +1,25 @@
 import axios from "axios";
+import { getToken } from "../controller/authController";
 
 const BASE_URL = "http://localhost:5001/api/admin";
 
-// Demo admin token for testing (in production, this would be retrieved from secure storage)
-const DEMO_ADMIN_TOKEN = "Bearer demo_admin_token_12345";
-
-// Helper function to get auth headers
-const getAuthHeaders = (token = null) => {
-  const authToken = token || localStorage.getItem("adminToken") || DEMO_ADMIN_TOKEN;
+const getAuthConfig = () => {
+  const token = getToken();
   return {
-    Authorization: authToken,
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : {},
   };
 };
 
 // Get all suspicious transactions
-export const getSuspiciousTransactions = async (filters = {}, token = null) => {
+export const getSuspiciousTransactions = async (filters = {}) => {
   try {
     const response = await axios.get(`${BASE_URL}/suspicious-transactions`, {
       params: filters,
-      headers: getAuthHeaders(token),
+      ...getAuthConfig(),
     });
     return response.data;
   } catch (error) {
@@ -28,12 +29,12 @@ export const getSuspiciousTransactions = async (filters = {}, token = null) => {
 };
 
 // Review a suspicious transaction
-export const reviewSuspiciousTransaction = async (id, reviewData, token = null) => {
+export const reviewSuspiciousTransaction = async (id, reviewData) => {
   try {
     const response = await axios.put(
       `${BASE_URL}/suspicious-transactions/${id}/review`,
       reviewData,
-      { headers: getAuthHeaders(token) }
+      getAuthConfig()
     );
     return response.data;
   } catch (error) {
@@ -43,12 +44,12 @@ export const reviewSuspiciousTransaction = async (id, reviewData, token = null) 
 };
 
 // Get notifications
-export const getNotifications = async (userId = null, token = null) => {
+export const getNotifications = async (userId = null) => {
   try {
     const params = userId ? { userId } : {};
     const response = await axios.get(`${BASE_URL}/notifications`, {
       params,
-      headers: getAuthHeaders(token),
+      ...getAuthConfig(),
     });
     return response.data;
   } catch (error) {
@@ -58,12 +59,12 @@ export const getNotifications = async (userId = null, token = null) => {
 };
 
 // Mark notification as read
-export const markNotificationAsRead = async (id, token = null) => {
+export const markNotificationAsRead = async (id) => {
   try {
     const response = await axios.put(
       `${BASE_URL}/notifications/${id}/read`,
       {},
-      { headers: getAuthHeaders(token) }
+      getAuthConfig()
     );
     return response.data;
   } catch (error) {
@@ -73,11 +74,9 @@ export const markNotificationAsRead = async (id, token = null) => {
 };
 
 // Get dashboard stats
-export const getDashboardStats = async (token = null) => {
+export const getDashboardStats = async () => {
   try {
-    const response = await axios.get(`${BASE_URL}/dashboard-stats`, {
-      headers: getAuthHeaders(token),
-    });
+    const response = await axios.get(`${BASE_URL}/dashboard-stats`, getAuthConfig());
     return response.data;
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
@@ -86,11 +85,9 @@ export const getDashboardStats = async (token = null) => {
 };
 
 // Get user activity report
-export const getUserActivityReport = async (userId, token = null) => {
+export const getUserActivityReport = async (userId) => {
   try {
-    const response = await axios.get(`${BASE_URL}/user-activity/${userId}`, {
-      headers: getAuthHeaders(token),
-    });
+    const response = await axios.get(`${BASE_URL}/user-activity/${userId}`, getAuthConfig());
     return response.data;
   } catch (error) {
     console.error("Error fetching user activity report:", error);

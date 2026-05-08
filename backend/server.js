@@ -1,8 +1,10 @@
-require("dotenv").config(); // Load environment variables
-const express = require("express"); // 1. Import express
+require("dotenv").config();
+const express = require("express");
 const cors = require("cors");
-const app = express(); // 2. Initialize the app
-const PORT = process.env.PORT || 5001; // 3. Define the port
+const connectDB = require("./config/db");
+
+const app = express();
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(express.json());
@@ -10,7 +12,7 @@ app.use(cors());
 
 // Database connection (non-blocking - continues even if DB fails)
 let dbConnected = false;
-require("./config/db")().then((result) => {
+connectDB().then((result) => {
   dbConnected = result;
 });
 
@@ -22,6 +24,7 @@ require("./models/Notification");
 require("./models/SuspiciousTransaction");
 
 // Routes
+app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/wallet", require("./routes/walletRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 
@@ -53,7 +56,6 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  // 4. Use 'app' (not 'server') to listen
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`📍 API URL: http://localhost:${PORT}/api`);
   console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
