@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:5000/api/wallet";
+const BASE_URL = "http://localhost:5001/api/wallet";
 
 export const getWalletSummary = async () => {
   const response = await axios.get(`${BASE_URL}/summary`);

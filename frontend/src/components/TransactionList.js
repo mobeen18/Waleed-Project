@@ -39,7 +39,6 @@ function TransactionList({ transactions }) {
         /* Transaction Rows */
         transactions.map((tx) => {
           const isDeposit = tx.type === "DEPOSIT" || tx.type === "TRANSFER_IN";
-          const isTransfer = tx.type === "TRANSFER_IN" || tx.type === "TRANSFER_OUT";
           const label = tx.type
             .split("_")
             .map((part) => part.charAt(0) + part.slice(1).toLowerCase())

@@ -10,10 +10,10 @@ const {
   transfer,
 } = require("../controllers/walletController");
 
-router.post("/deposit", protect, deposit);
-router.post("/withdraw", protect, withdraw);
-router.post("/transfer", protect, transfer);
-router.get("/summary", protect, getSummary);
-router.get("/wallets", protect, listWallets);
+router.post("/deposit", deposit);
+router.post("/withdraw", withdraw);
+router.post("/transfer", transfer);
+router.get("/summary", getSummary);
+router.get("/wallets", listWallets);
 
 module.exports = router;
