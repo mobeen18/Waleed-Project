@@ -22,11 +22,15 @@ require("./models/Wallet");
 require("./models/Transaction");
 require("./models/Notification");
 require("./models/SuspiciousTransaction");
+require("./models/Expense");
+require("./models/Budget");
 
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/wallet", require("./routes/walletRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/expenses", require("./routes/expenseRoutes"));
+app.use("/api/budgets", require("./routes/budgetRoutes"));
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

@@ -6,6 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ProfilePage from "./pages/ProfilePage";
 import TransactionsPage from "./pages/TransactionsPage";
 import ExpensesPage from "./pages/ExpensesPage";
+import BudgetPage from "./pages/BudgetPage";
 import AdminDashboard from "./pages/admin";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
@@ -25,6 +26,7 @@ function AppContent() {
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/transactions" element={<ProtectedRoute><TransactionsPage /></ProtectedRoute>} />
         <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
+        <Route path="/budget" element={<ProtectedRoute><BudgetPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route

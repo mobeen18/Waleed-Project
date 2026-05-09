@@ -34,6 +34,9 @@ function Navbar() {
           <Link to="/expenses" className={`nav-item ${isActive("/expenses")}`}>
             Expenses
           </Link>
+          <Link to="/budget" className={`nav-item ${isActive("/budget")}`}>
+            Budget
+          </Link>
           <Link to="/admin" className={`nav-item ${isActive("/admin")}`}>
             Admin
           </Link>

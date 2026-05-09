@@ -102,4 +102,18 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("_id name email role phone cnic clinicName city createdAt").sort({ createdAt: -1 });
+    
+    return res.status(200).json({
+      success: true,
+      data: users,
+    });
+  } catch (error) {
+    console.error("Get Users Error:", error);
+    return res.status(500).json({ success: false, message: "Server error retrieving users." });
+  }
+};
+
+module.exports = { register, login, getUsers };

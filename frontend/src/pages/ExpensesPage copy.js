@@ -2,10 +2,11 @@
 // Lets users add, edit, delete, filter, and summarise their expenses
 // Assumes user is already authenticated and JWT token is in localStorage
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   createExpense,
   getExpenses,
+  getMonthlySummary,
   getCategorySummary,
   updateExpense,
   deleteExpense,
@@ -220,6 +221,7 @@ const EMPTY_FORM = {
 export default function ExpensesPage() {
   // ── State ──────────────────────────────────────────────────────────────────
   const [expenses, setExpenses]             = useState([]);
+  const [monthlySummary, setMonthlySummary] = useState([]);
   const [categorySummary, setCategorySummary] = useState([]);
   const [users, setUsers]                   = useState([]);
   const [form, setForm]                     = useState(EMPTY_FORM);
@@ -233,23 +235,25 @@ export default function ExpensesPage() {
 
   // ── Data Fetching ──────────────────────────────────────────────────────────
   // Called on mount and whenever filters change
-  const fetchAll = useCallback(async () => {
+  const fetchAll = async () => {
     setLoading(true);
     setError('');
     try {
       // Run all three requests in parallel for speed
-      const [expRes, catRes] = await Promise.all([
+      const [expRes, monthRes, catRes] = await Promise.all([
         getExpenses(filters),
+        getMonthlySummary(),
         getCategorySummary(),
       ]);
       setExpenses(expRes.data.data);
+      setMonthlySummary(monthRes.data.data);
       setCategorySummary(catRes.data.data);
     } catch (err) {
       setError('Failed to load expenses. Please refresh the page.');
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  };
 
   const fetchUsers = async () => {
     try {
@@ -264,7 +268,7 @@ export default function ExpensesPage() {
   useEffect(() => {
     fetchAll();
     fetchUsers();
-  }, [filters, fetchAll]);
+  }, [filters]);
 
   // ── Auto-dismiss success message after 3 seconds ───────────────────────────
   useEffect(() => {
