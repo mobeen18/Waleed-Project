@@ -1,66 +1,41 @@
 import axios from "axios";
+import API_URL from "../config/api";
+import { getToken } from "../controller/authController";
 
-const API_URL = process.env.REACT_APP_API_URL;
+const getAuthConfig = () => {
+  const token = getToken();
+  return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+};
 
 const budgetService = {
   // Create a new budget
   createBudget: async (data) => {
-    const token = localStorage.getItem("token");
-    return axios.post(`${API_URL}/budgets`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return axios.post(`${API_URL}/budgets`, data, getAuthConfig());
   },
 
   // Get all budgets
   getBudgets: async () => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/budgets`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return axios.get(`${API_URL}/budgets`, getAuthConfig());
   },
 
   // Get current month's budget
   getCurrentBudget: async () => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/budgets/current/month`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return axios.get(`${API_URL}/budgets/current/month`, getAuthConfig());
   },
 
   // Get a single budget
   getBudget: async (id) => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/budgets/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return axios.get(`${API_URL}/budgets/${id}`, getAuthConfig());
   },
 
   // Update a budget
   updateBudget: async (id, data) => {
-    const token = localStorage.getItem("token");
-    return axios.put(`${API_URL}/budgets/${id}`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return axios.put(`${API_URL}/budgets/${id}`, data, getAuthConfig());
   },
 
   // Delete a budget
   deleteBudget: async (id) => {
-    const token = localStorage.getItem("token");
-    return axios.delete(`${API_URL}/budgets/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return axios.delete(`${API_URL}/budgets/${id}`, getAuthConfig());
   },
 };
 

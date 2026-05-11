@@ -1,26 +1,27 @@
 const express = require("express");
 const router = express.Router();
+const { protect } = require("../middleware/authMiddleware");
 const expenseController = require("../controllers/expenseController");
 
 // Create an expense
-router.post("/", expenseController.createExpense);
+router.post("/", protect, expenseController.createExpense);
 
 // Get all expenses with optional filters
-router.get("/", expenseController.getExpenses);
+router.get("/", protect, expenseController.getExpenses);
 
 // Get monthly summary
-router.get("/summary/monthly", expenseController.getMonthlySummary);
+router.get("/summary/monthly", protect, expenseController.getMonthlySummary);
 
 // Get category summary
-router.get("/summary/category", expenseController.getCategorySummary);
+router.get("/summary/category", protect, expenseController.getCategorySummary);
 
 // Get a single expense
-router.get("/:id", expenseController.getExpense);
+router.get("/:id", protect, expenseController.getExpense);
 
 // Update an expense
-router.put("/:id", expenseController.updateExpense);
+router.put("/:id", protect, expenseController.updateExpense);
 
 // Delete an expense
-router.delete("/:id", expenseController.deleteExpense);
+router.delete("/:id", protect, expenseController.deleteExpense);
 
 module.exports = router;

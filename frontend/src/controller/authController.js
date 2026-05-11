@@ -2,8 +2,8 @@ import axios from "axios";
 import API_URL from "../config/api";
 
 const BASE_URL = `${API_URL}/auth`;
-const TOKEN_KEY = "medilease_token";
-const USER_KEY = "medilease_user";
+const TOKEN_KEY = "token";
+const USER_KEY = "user";
 
 const saveAuthData = ({ token, user }) => {
   localStorage.setItem(TOKEN_KEY, token);

@@ -2,40 +2,7 @@ const mongoose = require("mongoose");
 const Wallet = require("../models/Wallet");
 const Transaction = require("../models/Transaction");
 
-// In-memory storage for demo mode when DB is not available
-const demoWallets = new Map();
-const demoTransactions = [];
-
-// MediLease demo mode uses a shared fallback wallet until full auth is integrated.
-const DEFAULT_USER_ID = "000000000000000000000000";
-
-// Helper function to check if database is connected
-const isDbConnected = () => {
-  return mongoose.connection.readyState === 1;
-};
-
-// Demo data creator
-const createDemoWallet = (userId) => {
-  return {
-    _id: new mongoose.Types.ObjectId(),
-    userId,
-    balance: 0,
-    totalDeposits: 0,
-    totalWithdrawals: 0,
-    createdAt: new Date(),
-  };
-};
-
 const getOrCreateWallet = async (userId) => {
-  if (!isDbConnected()) {
-    // Demo mode: use in-memory storage
-    if (!demoWallets.has(userId)) {
-      demoWallets.set(userId, createDemoWallet(userId));
-    }
-    return demoWallets.get(userId);
-  }
-
-  // Production mode: use database
   let wallet = await Wallet.findOne({ userId });
 
   if (!wallet) {
@@ -48,30 +15,6 @@ const getOrCreateWallet = async (userId) => {
 const listWallets = async (req, res) => {
   try {
     const search = (req.query.search || "").trim();
-    
-    if (!isDbConnected()) {
-      // Demo mode: return in-memory wallets
-      let wallets = Array.from(demoWallets.values());
-      
-      if (search) {
-        wallets = wallets.filter(w => w.userId.includes(search));
-      }
-      
-      wallets = wallets.sort((a, b) => b.balance - a.balance);
-      
-      return res.status(200).json({ 
-        success: true, 
-        wallets: wallets.map(w => ({
-          userId: w.userId.toString(),
-          balance: w.balance,
-          totalDeposits: w.totalDeposits,
-          totalWithdrawals: w.totalWithdrawals,
-          createdAt: w.createdAt,
-        }))
-      });
-    }
-
-    // Production mode: use database aggregation
     const pipeline = [];
 
     if (search) {
@@ -115,9 +58,16 @@ const transfer = async (req, res) => {
   try {
     const amount = parseFloat(req.body.amount);
     const toUserId = req.body.toUserId?.trim();
-    const fromUserId = req.user?.id || DEFAULT_USER_ID;
+    const fromUserId = req.user?.id;
 
     const equipment = (req.body.equipment || "").trim();
+
+    if (!fromUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
 
     if (!toUserId) {
       return res.status(400).json({
@@ -129,7 +79,8 @@ const transfer = async (req, res) => {
     if (!equipment) {
       return res.status(400).json({
         success: false,
-        message: "Please specify the equipment or lease item for this transfer.",
+        message:
+          "Please specify the equipment or lease item for this transfer.",
       });
     }
 
@@ -154,59 +105,6 @@ const transfer = async (req, res) => {
       });
     }
 
-    if (!isDbConnected()) {
-      // Demo mode: in-memory transfer
-      const fromWallet = demoWallets.get(fromUserId) || createDemoWallet(fromUserId);
-      
-      if (fromWallet.balance < amount) {
-        return res.status(400).json({
-          success: false,
-          message: "Insufficient balance for transfer.",
-        });
-      }
-
-      fromWallet.balance -= amount;
-      fromWallet.totalWithdrawals += amount;
-
-      let toWallet = demoWallets.get(toUserId);
-      if (!toWallet) {
-        toWallet = createDemoWallet(toUserId);
-        demoWallets.set(toUserId, toWallet);
-      }
-
-      toWallet.balance += amount;
-      toWallet.totalDeposits += amount;
-
-      demoTransactions.push({
-        type: "TRANSFER_OUT",
-        walletId: fromWallet._id,
-        amount,
-        targetWalletId: toWallet._id,
-        equipment,
-        createdAt: new Date(),
-      });
-
-      demoTransactions.push({
-        type: "TRANSFER_IN",
-        walletId: toWallet._id,
-        amount,
-        sourceWalletId: fromWallet._id,
-        equipment,
-        createdAt: new Date(),
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: `Transferred $${amount.toFixed(2)} for ${equipment} to wallet ${toUserId}.`,
-        wallet: {
-          balance: fromWallet.balance,
-          totalDeposits: fromWallet.totalDeposits,
-          totalWithdrawals: fromWallet.totalWithdrawals,
-        },
-      });
-    }
-
-    // Production mode: use database transactions
     const session = await Wallet.startSession();
     session.startTransaction();
 
@@ -221,7 +119,7 @@ const transfer = async (req, res) => {
           totalWithdrawals: amount,
         },
       },
-      { new: true, session }
+      { new: true, session },
     );
 
     if (!fromWallet) {
@@ -246,7 +144,7 @@ const transfer = async (req, res) => {
         upsert: true,
         setDefaultsOnInsert: true,
         session,
-      }
+      },
     );
 
     await Transaction.insertMany(
@@ -266,7 +164,7 @@ const transfer = async (req, res) => {
           equipment,
         },
       ],
-      { session }
+      { session },
     );
 
     await session.commitTransaction();
@@ -308,34 +206,16 @@ const deposit = async (req, res) => {
       });
     }
 
-    const userId = req.user?.id || DEFAULT_USER_ID;
-    let wallet = await getOrCreateWallet(userId);
-
-    if (!isDbConnected()) {
-      // Demo mode: update in-memory wallet
-      wallet.balance += amount;
-      wallet.totalDeposits += amount;
-      demoWallets.set(userId, wallet);
-
-      demoTransactions.push({
-        type: "DEPOSIT",
-        walletId: wallet._id,
-        amount,
-        createdAt: new Date(),
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: `Successfully deposited $${amount.toFixed(2)}`,
-        wallet: {
-          balance: wallet.balance,
-          totalDeposits: wallet.totalDeposits,
-          totalWithdrawals: wallet.totalWithdrawals,
-        },
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
       });
     }
 
-    // Production mode: update database
+    let wallet = await getOrCreateWallet(userId);
+
     const updatedWallet = await Wallet.findOneAndUpdate(
       { userId },
       {
@@ -344,7 +224,7 @@ const deposit = async (req, res) => {
           totalDeposits: amount,
         },
       },
-      { new: true }
+      { new: true },
     );
 
     await Transaction.create({
@@ -389,41 +269,16 @@ const withdraw = async (req, res) => {
       });
     }
 
-    const userId = req.user?.id || DEFAULT_USER_ID;
-    let wallet = await getOrCreateWallet(userId);
-
-    if (!isDbConnected()) {
-      // Demo mode: update in-memory wallet
-      if (wallet.balance < amount) {
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient balance. Your current balance is $${wallet.balance.toFixed(2)}.`,
-        });
-      }
-
-      wallet.balance -= amount;
-      wallet.totalWithdrawals += amount;
-      demoWallets.set(userId, wallet);
-
-      demoTransactions.push({
-        type: "WITHDRAWAL",
-        walletId: wallet._id,
-        amount,
-        createdAt: new Date(),
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: `Successfully withdrew $${amount.toFixed(2)} from the MediLease wallet`,
-        wallet: {
-          balance: wallet.balance,
-          totalDeposits: wallet.totalDeposits,
-          totalWithdrawals: wallet.totalWithdrawals,
-        },
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
       });
     }
 
-    // Production mode: update database
+    let wallet = await getOrCreateWallet(userId);
+
     const updatedWallet = await Wallet.findOneAndUpdate(
       {
         userId,
@@ -435,7 +290,7 @@ const withdraw = async (req, res) => {
           totalWithdrawals: amount,
         },
       },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedWallet) {
@@ -474,36 +329,16 @@ const withdraw = async (req, res) => {
 
 const getSummary = async (req, res) => {
   try {
-    const userId = req.user?.id || DEFAULT_USER_ID;
-
-    const wallet = await getOrCreateWallet(userId);
-
-    if (!isDbConnected()) {
-      // Demo mode: return in-memory data
-      const transactions = demoTransactions
-        .filter(tx => tx.walletId.toString() === wallet._id.toString())
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 10);
-
-      return res.status(200).json({
-        success: true,
-        wallet: {
-          balance: wallet.balance,
-          totalDeposits: wallet.totalDeposits,
-          totalWithdrawals: wallet.totalWithdrawals,
-          createdAt: wallet.createdAt,
-        },
-        recentTransactions: transactions.map((tx) => ({
-          id: tx._id || new mongoose.Types.ObjectId(),
-          type: tx.type,
-          amount: tx.amount,
-          date: tx.createdAt,
-          equipment: tx.equipment || "",
-        })),
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
       });
     }
 
-    // Production mode: fetch from database
+    const wallet = await getOrCreateWallet(userId);
+
     const recentTransactions = await Transaction.find({ walletId: wallet._id })
       .sort({ createdAt: -1 })
       .limit(10);
@@ -533,4 +368,488 @@ const getSummary = async (req, res) => {
   }
 };
 
-module.exports = { deposit, withdraw, getSummary, listWallets, transfer };
+const getTransactions = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { page = 1, limit = 20, type } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
+
+    const wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: "Wallet not found.",
+      });
+    }
+
+    const query = { walletId: wallet._id };
+    if (type) {
+      query.type = type;
+    }
+
+    const transactions = await Transaction.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await Transaction.countDocuments(query);
+
+    return res.status(200).json({
+      success: true,
+      transactions: transactions.map((tx) => ({
+        id: tx._id,
+        type: tx.type,
+        amount: tx.amount,
+        date: tx.createdAt,
+        equipment: tx.equipment || "",
+        targetWalletId: tx.targetWalletId,
+        sourceWalletId: tx.sourceWalletId,
+      })),
+      total,
+      pages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+    });
+  } catch (error) {
+    console.error("Transactions error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching transactions.",
+    });
+  }
+};
+
+module.exports = {
+  deposit,
+  withdraw,
+  getSummary,
+  listWallets,
+  transfer,
+  getTransactions,
+};
+
+const listWallets = async (req, res) => {
+  try {
+    const search = (req.query.search || "").trim();
+    const pipeline = [];
+
+    if (search) {
+      pipeline.push({
+        $addFields: {
+          userIdString: { $toString: "$userId" },
+        },
+      });
+      pipeline.push({
+        $match: {
+          userIdString: { $regex: search, $options: "i" },
+        },
+      });
+    }
+
+    pipeline.push({
+      $project: {
+        userId: { $toString: "$userId" },
+        balance: 1,
+        totalDeposits: 1,
+        totalWithdrawals: 1,
+        createdAt: 1,
+      },
+    });
+
+    pipeline.push({ $sort: { balance: -1 } });
+
+    const wallets = await Wallet.aggregate(pipeline);
+
+    return res.status(200).json({ success: true, wallets });
+  } catch (error) {
+    console.error("Wallet list error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch the wallet directory.",
+    });
+  }
+};
+
+const transfer = async (req, res) => {
+  try {
+    const amount = parseFloat(req.body.amount);
+    const toUserId = req.body.toUserId?.trim();
+    const fromUserId = req.user?.id;
+
+    const equipment = (req.body.equipment || "").trim();
+
+    if (!fromUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
+
+    if (!toUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a receiver user ID.",
+      });
+    }
+
+    if (!equipment) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please specify the equipment or lease item for this transfer.",
+      });
+    }
+
+    if (toUserId === fromUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot transfer to the same wallet.",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(toUserId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Receiver user ID must be a valid 24-character ID.",
+      });
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Transfer amount must be a positive number.",
+      });
+    }
+
+    const session = await Wallet.startSession();
+    session.startTransaction();
+
+    const fromWallet = await Wallet.findOneAndUpdate(
+      {
+        userId: fromUserId,
+        balance: { $gte: amount },
+      },
+      {
+        $inc: {
+          balance: -amount,
+          totalWithdrawals: amount,
+        },
+      },
+      { new: true, session },
+    );
+
+    if (!fromWallet) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient balance for transfer.",
+      });
+    }
+
+    const toWallet = await Wallet.findOneAndUpdate(
+      { userId: toUserId },
+      {
+        $inc: {
+          balance: amount,
+          totalDeposits: amount,
+        },
+      },
+      {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+        session,
+      },
+    );
+
+    await Transaction.insertMany(
+      [
+        {
+          walletId: fromWallet._id,
+          type: "TRANSFER_OUT",
+          amount,
+          targetWalletId: toWallet._id,
+          equipment,
+        },
+        {
+          walletId: toWallet._id,
+          type: "TRANSFER_IN",
+          amount,
+          sourceWalletId: fromWallet._id,
+          equipment,
+        },
+      ],
+      { session },
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(200).json({
+      success: true,
+      message: `Transferred $${amount.toFixed(2)} for ${equipment} to wallet ${toUserId}.`,
+      wallet: {
+        balance: fromWallet.balance,
+        totalDeposits: fromWallet.totalDeposits,
+        totalWithdrawals: fromWallet.totalWithdrawals,
+      },
+    });
+  } catch (error) {
+    console.error("Transfer error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during transfer. Please try again.",
+    });
+  }
+};
+
+const deposit = async (req, res) => {
+  try {
+    const amount = parseFloat(req.body.amount);
+
+    if (isNaN(amount)) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount is required and must be a number.",
+      });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Deposit amount must be greater than 0.",
+      });
+    }
+
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
+
+    let wallet = await getOrCreateWallet(userId);
+
+    const updatedWallet = await Wallet.findOneAndUpdate(
+      { userId },
+      {
+        $inc: {
+          balance: amount,
+          totalDeposits: amount,
+        },
+      },
+      { new: true },
+    );
+
+    await Transaction.create({
+      walletId: updatedWallet._id,
+      type: "DEPOSIT",
+      amount: amount,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully deposited $${amount.toFixed(2)}`,
+      wallet: {
+        balance: updatedWallet.balance,
+        totalDeposits: updatedWallet.totalDeposits,
+        totalWithdrawals: updatedWallet.totalWithdrawals,
+      },
+    });
+  } catch (error) {
+    console.error("Deposit error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during deposit. Please try again.",
+    });
+  }
+};
+
+const withdraw = async (req, res) => {
+  try {
+    const amount = parseFloat(req.body.amount);
+
+    if (isNaN(amount)) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount is required and must be a number.",
+      });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Withdrawal amount must be greater than 0.",
+      });
+    }
+
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
+
+    let wallet = await getOrCreateWallet(userId);
+
+    const updatedWallet = await Wallet.findOneAndUpdate(
+      {
+        userId,
+        balance: { $gte: amount },
+      },
+      {
+        $inc: {
+          balance: -amount,
+          totalWithdrawals: amount,
+        },
+      },
+      { new: true },
+    );
+
+    if (!updatedWallet) {
+      const currentWallet = await Wallet.findOne({ userId });
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient balance. Your current balance is $${
+          currentWallet ? currentWallet.balance.toFixed(2) : "0.00"
+        }.`,
+      });
+    }
+
+    await Transaction.create({
+      walletId: updatedWallet._id,
+      type: "WITHDRAWAL",
+      amount: amount,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully withdrew $${amount.toFixed(2)} from the MediLease wallet`,
+      wallet: {
+        balance: updatedWallet.balance,
+        totalDeposits: updatedWallet.totalDeposits,
+        totalWithdrawals: updatedWallet.totalWithdrawals,
+      },
+    });
+  } catch (error) {
+    console.error("Withdrawal error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during withdrawal. Please try again.",
+    });
+  }
+};
+
+const getSummary = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
+
+    const wallet = await getOrCreateWallet(userId);
+
+    const recentTransactions = await Transaction.find({ walletId: wallet._id })
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    return res.status(200).json({
+      success: true,
+      wallet: {
+        balance: wallet.balance,
+        totalDeposits: wallet.totalDeposits,
+        totalWithdrawals: wallet.totalWithdrawals,
+        createdAt: wallet.createdAt,
+      },
+      recentTransactions: recentTransactions.map((tx) => ({
+        id: tx._id,
+        type: tx.type,
+        amount: tx.amount,
+        date: tx.createdAt,
+        equipment: tx.equipment || "",
+      })),
+    });
+  } catch (error) {
+    console.error("Summary error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching wallet summary.",
+    });
+  }
+};
+
+const getTransactions = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { page = 1, limit = 20, type } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
+
+    const wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: "Wallet not found.",
+      });
+    }
+
+    const query = { walletId: wallet._id };
+    if (type) {
+      query.type = type;
+    }
+
+    const transactions = await Transaction.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await Transaction.countDocuments(query);
+
+    return res.status(200).json({
+      success: true,
+      transactions: transactions.map((tx) => ({
+        id: tx._id,
+        type: tx.type,
+        amount: tx.amount,
+        date: tx.createdAt,
+        equipment: tx.equipment || "",
+        targetWalletId: tx.targetWalletId,
+        sourceWalletId: tx.sourceWalletId,
+      })),
+      total,
+      pages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+    });
+  } catch (error) {
+    console.error("Transactions error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching transactions.",
+    });
+  }
+};
+
+module.exports = {
+  deposit,
+  withdraw,
+  getSummary,
+  listWallets,
+  transfer,
+  getTransactions,
+};
