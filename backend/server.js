@@ -13,9 +13,22 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
+// CORS Configuration
+const corsOptions = {
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:5001",
+    "https://medilease.vercel.app",
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
 
 // Database connection
 let dbConnected = false;
@@ -37,12 +50,10 @@ const startServer = async () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`📍 API URL: http://localhost:${PORT}/api`);
       console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-      if (!dbConnected) {
-        console.log(`⚠️  Using in-memory storage (no persistent DB)`);
-      }
+      console.log(`✅ Database Connected`);
     });
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
+    console.error("❌ Failed to start server:", error.message);
     process.exit(1);
   }
 };
