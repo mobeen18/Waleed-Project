@@ -77,9 +77,9 @@ function AppContent() {
           path="*"
           element={
             <div style={styles.notFound}>
-              <h1>404 — Page not found</h1>
+              <h1>CAMERA MEIN DEKH KY HATH HILA DAIN PLEASE - :)</h1>
               <Link to="/" style={styles.homeLink}>
-                Return to Home
+                WAPIS AAIN
               </Link>
             </div>
           }
