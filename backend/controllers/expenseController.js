@@ -1,11 +1,7 @@
 const mongoose = require("mongoose");
 const Expense = require("../models/Expense");
 const Budget = require("../models/Budget");
-
-// Helper function to check if database is connected
-const isDbConnected = () => {
-  return mongoose.connection.readyState === 1;
-};
+const { isDbConnected } = require("../utils/dbUtils");
 
 // ─── Create an expense ────────────────────────────────────────────────────────
 exports.createExpense = async (req, res) => {

@@ -5,11 +5,7 @@ const User = require("../models/User");
 const Wallet = require("../models/Wallet");
 const Transaction = require("../models/Transaction");
 const { demoUsers } = require("../config/demo");
-
-// Helper function to check if database is connected
-const isDbConnected = () => {
-  return mongoose.connection.readyState === 1;
-};
+const { isDbConnected } = require("../utils/dbUtils");
 
 // Get all suspicious transactions
 const getSuspiciousTransactions = async (req, res) => {

@@ -3,6 +3,7 @@
 // and see live status (safe / nearLimit / exceeded) pulled from the backend
 
 import { useState, useEffect } from 'react';
+import { useBudget } from "../hooks/useBudget";
 import {
   createBudget,
   getBudgets,
@@ -297,6 +298,8 @@ export default function BudgetPage() {
   const [error, setError]                   = useState('');
   const [success, setSuccess]               = useState('');
 
+  const { addCategoryLimit: addCategoryLimitHook } = useBudget();
+
   // ── Data Fetching ──────────────────────────────────────────────────────────
   const fetchAll = async () => {
     setLoading(true);
@@ -335,24 +338,8 @@ export default function BudgetPage() {
 
   // Add a new category limit row to the form
   const addCategoryLimit = () => {
-    if (!newCatLimit.category || !newCatLimit.limit || Number(newCatLimit.limit) <= 0) return;
-
-    // Prevent duplicate categories
-    const alreadyAdded = form.categoryLimits.find((cl) => cl.category === newCatLimit.category);
-    if (alreadyAdded) {
-      setError(`${newCatLimit.category} limit already set`);
-      return;
-    }
-
-    setForm({
-      ...form,
-      categoryLimits: [
-        ...form.categoryLimits,
-        { category: newCatLimit.category, limit: Number(newCatLimit.limit) },
-      ],
-    });
-    setNewCatLimit({ category: '', limit: '' });
-    setError('');
+    addCategoryLimitHook(newCatLimit, form, setForm, setError);
+    setNewCatLimit({ category: "", limit: "" });
   };
 
   // Remove a category limit row
