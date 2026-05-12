@@ -1,7 +1,5 @@
-import axios from "axios";
-import API_URL from "../config/api";
+import API from "../config/api";
 
-const BASE_URL = `${API_URL}/auth`;
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
 
@@ -25,7 +23,7 @@ export const logout = () => {
 };
 
 export const register = async (formData) => {
-  const response = await axios.post(`${BASE_URL}/register`, formData);
+  const response = await API.post("/auth/register", formData);
   if (response.data.token) {
     saveAuthData(response.data);
   }
@@ -33,7 +31,7 @@ export const register = async (formData) => {
 };
 
 export const login = async (credentials) => {
-  const response = await axios.post(`${BASE_URL}/login`, credentials);
+  const response = await API.post("/auth/login", credentials);
   if (response.data.token) {
     saveAuthData(response.data);
   }
