@@ -16,7 +16,18 @@ const connectDB = async () => {
   const localUri = "mongodb://127.0.0.1:27017/waleed_project";
   const uriToTry = remoteUri || localUri;
 
-  const connect = async (uri) => {
+  if (!uriToTry || uriToTry.includes("127.0.0.1")) {
+    // Use in-memory MongoDB for local development
+    const mongoServer = await MongoMemoryServer.create();
+    uri = mongoServer.getUri();
+    console.log("🔄 Using in-memory MongoDB for development");
+  }
+
+  if (!uri) {
+    throw new Error("MONGODB_URI environment variable is not set");
+  }
+
+  try {
     const conn = await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -25,40 +36,9 @@ const connectDB = async () => {
     });
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     return true;
-  };
-
-  const connectMemoryDb = async () => {
-    const mongod = await MongoMemoryServer.create();
-    const uri = mongod.getUri();
-    const conn = await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("✅ MongoDB Memory Server connected: running in-memory database");
-    return true;
-  };
-
-  try {
-    await connect(uriToTry);
-    return true;
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
-    if (remoteUri && remoteUri !== localUri) {
-      try {
-        console.log("Trying local MongoDB fallback at mongodb://127.0.0.1:27017/waleed_project");
-        await connect(localUri);
-        return true;
-      } catch (fallbackError) {
-        console.error("❌ Local MongoDB fallback failed:", fallbackError.message);
-        console.log("Starting in-memory MongoDB server as fallback.");
-        await connectMemoryDb();
-        return true;
-      }
-    } else {
-      console.log("Starting in-memory MongoDB server as fallback.");
-      await connectMemoryDb();
-      return true;
-    }
+    throw error;
   }
 };
 

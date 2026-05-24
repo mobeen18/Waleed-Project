@@ -16,6 +16,7 @@
 // ============================================================
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { getWalletSummary, getWallets } from "../services/walletService";
 import DepositModal from "../components/DepositModal";
 import WithdrawModal from "../components/WithdrawModal";
@@ -45,6 +46,7 @@ function WalletDashboard() {
 
   const [wallets, setWallets] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
 
   // ── Fetch Wallet Data on Mount ──
   // useEffect with [] runs ONCE when the component first renders.
@@ -138,16 +140,41 @@ function WalletDashboard() {
   // ── Main Render ──
   return (
     <div className="page-wrapper">
-
       {/* ── Page Header ── */}
       <div className="dashboard-header">
         <div>
           <h1 className="dashboard-title">
             MediLease <span>Wallet</span>
           </h1>
-          <p className="dashboard-subtitle">Manage your funds, view transactions, and track expenses.</p>
+          <p className="dashboard-subtitle">
+            Manage your funds, view transactions, and track expenses.
+          </p>
         </div>
-        <span className="header-badge">● Demo</span>
+      </div>
+
+      {/* ── Module Cards ── */}
+      <div className="module-grid">
+        <button className="module-card" onClick={() => navigate("/dashboard")}>
+          Wallet
+        </button>
+        <button
+          className="module-card"
+          onClick={() => navigate("/transactions")}
+        >
+          Transactions
+        </button>
+        <button className="module-card" onClick={() => navigate("/expenses")}>
+          Expenses
+        </button>
+        <button className="module-card" onClick={() => navigate("/budget")}>
+          Budget
+        </button>
+        <button className="module-card" onClick={() => navigate("/admin")}>
+          Admin
+        </button>
+        <button className="module-card" onClick={() => navigate("/profile")}>
+          Profile
+        </button>
       </div>
 
       {/* ── Stats Cards ── */}
@@ -209,7 +236,7 @@ function WalletDashboard() {
         <div className="directory-header">
           <div>
             <h3>Wallet Directory</h3>
-            <p>Search and explore all MediLease wallets in the demo environment.</p>
+            <p>Search and explore all MediLease wallets.</p>
           </div>
           <input
             type="search"
@@ -236,15 +263,21 @@ function WalletDashboard() {
                 <div className="wallet-values">
                   <div>
                     <div className="wallet-label">Balance</div>
-                    <div className="wallet-amount">${item.balance.toFixed(2)}</div>
+                    <div className="wallet-amount">
+                      ${item.balance.toFixed(2)}
+                    </div>
                   </div>
                   <div>
                     <div className="wallet-label">Deposited</div>
-                    <div className="wallet-amount deposits">${item.totalDeposits.toFixed(2)}</div>
+                    <div className="wallet-amount deposits">
+                      ${item.totalDeposits.toFixed(2)}
+                    </div>
                   </div>
                   <div>
                     <div className="wallet-label">Withdrawn</div>
-                    <div className="wallet-amount withdrawals">${item.totalWithdrawals.toFixed(2)}</div>
+                    <div className="wallet-amount withdrawals">
+                      ${item.totalWithdrawals.toFixed(2)}
+                    </div>
                   </div>
                 </div>
               </div>

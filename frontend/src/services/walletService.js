@@ -1,63 +1,56 @@
-import axios from "axios";
-import { getToken } from "../controller/authController";
-import API_URL from "../config/api";
-
-const BASE_URL = `${API_URL}/wallet`;
-
-const getAuthConfig = () => {
-  const token = getToken();
-  return token
-    ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    : {};
-};
+import API from "../config/api";
+import { getAuthConfig } from "../utils/authUtils";
 
 export const getWalletSummary = async () => {
-  const response = await axios.get(`${BASE_URL}/summary`, getAuthConfig());
+  const response = await API.get("/wallet/summary", getAuthConfig());
   return response.data;
 };
 
 export const getWallets = async (search = "") => {
-  const response = await axios.get(
-    `${BASE_URL}/wallets`,
-    {
-      params: { search },
-      ...getAuthConfig(),
-    }
-  );
+  const response = await API.get("/wallet/wallets", {
+    params: { search },
+    ...getAuthConfig(),
+  });
   return response.data;
 };
 
 export const depositFunds = async (amount) => {
-  const response = await axios.post(
-    `${BASE_URL}/deposit`,
+  const response = await API.post(
+    "/wallet/deposit",
     { amount },
-    getAuthConfig()
+    getAuthConfig(),
   );
   return response.data;
 };
 
 export const withdrawFunds = async (amount) => {
-  const response = await axios.post(
-    `${BASE_URL}/withdraw`,
+  const response = await API.post(
+    "/wallet/withdraw",
     { amount },
-    getAuthConfig()
+    getAuthConfig(),
+  );
+  return response.data;
+};
+
+export const getTransactions = async (page = 1, limit = 20, type = "") => {
+  const params = new URLSearchParams({ page, limit });
+  if (type) params.append("type", type);
+  const response = await API.get(
+    `/wallet/transactions?${params}`,
+    getAuthConfig(),
   );
   return response.data;
 };
 
 export const transferFunds = async (toUserId, amount, equipment) => {
-  const response = await axios.post(
-    `${BASE_URL}/transfer`,
+  const response = await API.post(
+    "/wallet/transfer",
     {
       toUserId,
       amount,
       equipment,
     },
-    getAuthConfig()
+    getAuthConfig(),
   );
   return response.data;
 };

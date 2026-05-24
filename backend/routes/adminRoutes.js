@@ -8,9 +8,17 @@ const {
   markNotificationAsRead,
   getDashboardStats,
   getUserActivityReport,
+  getAllUsers,
+  blockUser,
+  unblockUser,
 } = require("../controllers/adminController");
 
 const { protect } = require("../middleware/authMiddleware");
+
+// User management routes
+router.get("/users", protect, getAllUsers);
+router.put("/users/:id/block", protect, blockUser);
+router.put("/users/:id/unblock", protect, unblockUser);
 
 // Suspicious transactions routes
 router.get("/suspicious-transactions", protect, getSuspiciousTransactions);

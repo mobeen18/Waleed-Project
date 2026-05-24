@@ -1,65 +1,35 @@
-import axios from "axios";
-import API_URL from "../config/api";
+import API from "../config/api";
+import { getAuthConfig } from "../utils/authUtils";
 
 const budgetService = {
   // Create a new budget
   createBudget: async (data) => {
-    const token = localStorage.getItem("token");
-    return axios.post(`${API_URL}/budgets`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.post("/budgets", data, getAuthConfig());
   },
 
   // Get all budgets
   getBudgets: async () => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/budgets`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.get("/budgets", getAuthConfig());
   },
 
   // Get current month's budget
   getCurrentBudget: async () => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/budgets/current/month`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.get("/budgets/current/month", getAuthConfig());
   },
 
   // Get a single budget
   getBudget: async (id) => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/budgets/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.get(`/budgets/${id}`, getAuthConfig());
   },
 
   // Update a budget
   updateBudget: async (id, data) => {
-    const token = localStorage.getItem("token");
-    return axios.put(`${API_URL}/budgets/${id}`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.put(`/budgets/${id}`, data, getAuthConfig());
   },
 
   // Delete a budget
   deleteBudget: async (id) => {
-    const token = localStorage.getItem("token");
-    return axios.delete(`${API_URL}/budgets/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.delete(`/budgets/${id}`, getAuthConfig());
   },
 };
 

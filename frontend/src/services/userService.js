@@ -1,45 +1,25 @@
-import axios from "axios";
-import API_URL from "../config/api";
+import API from "../config/api";
+import { getAuthConfig } from "../utils/authUtils";
 
 const userService = {
   // Get all users
   getUsers: async () => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/auth/users`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.get("/auth/users", getAuthConfig());
   },
 
   // Get a single user
   getUser: async (id) => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/auth/users/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.get(`/auth/users/${id}`, getAuthConfig());
   },
 
   // Get current user profile
   getCurrentUser: async () => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/auth/profile`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.get("/auth/profile", getAuthConfig());
   },
 
   // Update user profile
   updateProfile: async (data) => {
-    const token = localStorage.getItem("token");
-    return axios.put(`${API_URL}/auth/profile`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.put("/auth/profile", data, getAuthConfig());
   },
 };
 

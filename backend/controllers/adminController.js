@@ -4,25 +4,12 @@ const Notification = require("../models/Notification");
 const User = require("../models/User");
 const Wallet = require("../models/Wallet");
 const Transaction = require("../models/Transaction");
-
-// Helper function to check if database is connected
-const isDbConnected = () => {
-  return mongoose.connection.readyState === 1;
-};
+const { demoUsers } = require("../config/demo");
+const { isDbConnected } = require("../utils/dbUtils");
 
 // Get all suspicious transactions
 const getSuspiciousTransactions = async (req, res) => {
   try {
-    if (!isDbConnected()) {
-      // Demo mode: return empty array
-      return res.status(200).json({
-        success: true,
-        suspicious: [],
-        total: 0,
-        pages: 0,
-      });
-    }
-
     const { severity, reviewed, page = 1, limit = 10 } = req.query;
     const skip = (page - 1) * limit;
 
@@ -319,6 +306,129 @@ const getUserActivityReport = async (req, res) => {
   }
 };
 
+// Get all users for admin
+const getAllUsers = async (req, res) => {
+  try {
+    if (!isDbConnected()) {
+      // Demo mode
+      const users = demoUsers.map(u => {
+        const { password, ...userWithoutPassword } = u;
+        return { ...userWithoutPassword, blocked: u.blocked || false, createdAt: new Date() };
+      });
+      return res.status(200).json({
+        success: true,
+        users,
+      });
+    }
+
+    const users = await User.find().select("-password").sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.error("Get all users error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch users.",
+    });
+  }
+};
+
+// Block a user
+const blockUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isDbConnected()) {
+      // Demo mode
+      const userIndex = demoUsers.findIndex(u => u._id.toString() === id);
+      if (userIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found.",
+        });
+      }
+      demoUsers[userIndex].blocked = true;
+      const { password, ...userWithoutPassword } = demoUsers[userIndex];
+      return res.status(200).json({
+        success: true,
+        message: "User blocked successfully.",
+        user: userWithoutPassword,
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID.",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(id, { blocked: true }, { new: true }).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User blocked successfully.",
+      user,
+    });
+  } catch (error) {
+    console.error("Block user error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to block user.",
+    });
+  }
+};
+
+// Unblock a user
+const unblockUser = async (req, res) => {
+  try {
+    if (!isDbConnected()) {
+      return res.status(503).json({
+        success: false,
+        message: "Database not connected.",
+      });
+    }
+
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID.",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(id, { blocked: false }, { new: true }).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User unblocked successfully.",
+      user,
+    });
+  } catch (error) {
+    console.error("Unblock user error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to unblock user.",
+    });
+  }
+};
+
 module.exports = {
   getSuspiciousTransactions,
   reviewSuspiciousTransaction,
@@ -326,4 +436,7 @@ module.exports = {
   markNotificationAsRead,
   getDashboardStats,
   getUserActivityReport,
+  getAllUsers,
+  blockUser,
+  unblockUser,
 };

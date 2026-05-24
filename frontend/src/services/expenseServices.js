@@ -1,81 +1,47 @@
-import axios from "axios";
-import API_URL from "../config/api";
+import API from "../config/api";
+import { getAuthConfig } from "../utils/authUtils";
+
 
 const expenseService = {
   // Create a new expense
   createExpense: async (data) => {
-    const token = localStorage.getItem("token");
-    return axios.post(`${API_URL}/expenses`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.post("/expenses", data, getAuthConfig());
   },
 
   // Get all expenses with optional filters
   getExpenses: async (filters = {}) => {
-    const token = localStorage.getItem("token");
     const params = new URLSearchParams();
-    
+
     if (filters.category) params.append("category", filters.category);
     if (filters.startDate) params.append("startDate", filters.startDate);
     if (filters.endDate) params.append("endDate", filters.endDate);
 
-    return axios.get(`${API_URL}/expenses?${params.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.get(`/expenses?${params.toString()}`, getAuthConfig());
   },
 
   // Get monthly summary
   getMonthlySummary: async () => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/expenses/summary/monthly`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.get("/expenses/summary/monthly", getAuthConfig());
   },
 
   // Get category summary
   getCategorySummary: async () => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/expenses/summary/category`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.get("/expenses/summary/category", getAuthConfig());
   },
 
   // Get a single expense
   getExpense: async (id) => {
-    const token = localStorage.getItem("token");
-    return axios.get(`${API_URL}/expenses/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.get(`/expenses/${id}`, getAuthConfig());
   },
 
   // Update an expense
   updateExpense: async (id, data) => {
-    const token = localStorage.getItem("token");
-    return axios.put(`${API_URL}/expenses/${id}`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.put(`/expenses/${id}`, data, getAuthConfig());
   },
 
   // Delete an expense
   deleteExpense: async (id) => {
-    const token = localStorage.getItem("token");
-    return axios.delete(`${API_URL}/expenses/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return API.delete(`/expenses/${id}`, getAuthConfig());
   },
 };
 

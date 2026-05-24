@@ -1,4 +1,45 @@
-// API Configuration - uses environment variables for flexibility
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001/api";
+import axios from "axios";
 
-export default API_URL;
+// API Configuration - uses environment variables for flexibility
+const API_URL =
+  process.env.REACT_APP_API_URL ||
+  "https://waleed-project-production.up.railway.app";
+
+console.log("API Base URL:", API_URL);
+
+const API = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+  timeout: 10000,
+});
+
+// Add request interceptor to log requests
+API.interceptors.request.use(
+  (config) => {
+    console.log("API Request:", config.method.toUpperCase(), config.url);
+    return config;
+  },
+  (error) => {
+    console.error("Request Error:", error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to log responses and handle errors
+API.interceptors.response.use(
+  (response) => {
+    console.log("API Response:", response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error("API Error:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      url: error.config?.url,
+    });
+    return Promise.reject(error);
+  }
+);
+
+export default API;

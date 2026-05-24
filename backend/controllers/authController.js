@@ -104,16 +104,69 @@ const login = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find().select("_id name email role phone cnic clinicName city createdAt").sort({ createdAt: -1 });
-    
+    const users = await User.find()
+      .select(
+        "_id name email role phone cnic clinicName city blocked createdAt",
+      )
+      .sort({ createdAt: -1 });
+
     return res.status(200).json({
       success: true,
       data: users,
     });
   } catch (error) {
     console.error("Get Users Error:", error);
-    return res.status(500).json({ success: false, message: "Server error retrieving users." });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error retrieving users." });
   }
 };
 
-module.exports = { register, login, getUsers };
+const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
+    }
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("Get Profile Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error retrieving profile." });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const { name, phone, cnic, clinicName, city } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { name, phone, cnic, clinicName, city },
+      { new: true },
+    ).select("-password");
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+      user,
+    });
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error updating profile." });
+  }
+};
+
+module.exports = { register, login, getUsers, getProfile, updateProfile };

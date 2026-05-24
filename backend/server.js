@@ -6,6 +6,26 @@ const connectDB = require("./config/db");
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+if (!process.env.JWT_SECRET) {
+  console.error(
+    "❌ Missing JWT_SECRET. Set this environment variable before starting the server.",
+  );
+  process.exit(1);
+}
+
+// CORS Configuration
+const corsOptions = {
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:5001",
+    "https://medilease.vercel.app",
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
 // Middleware
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
@@ -19,28 +39,35 @@ app.use(
     message: "Too many requests from this IP, please try again later.",
   })
 );
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-    credentials: true,
-    optionsSuccessStatus: 200,
-  })
-);
+app.use(cors(corsOptions));
 
-// Database connection (non-blocking - continues even if DB fails)
+// Database connection
 let dbConnected = false;
-connectDB().then((result) => {
-  dbConnected = result;
-});
 
-// Import Models (ensures they are registered with MongoDB)
-require("./models/User");
-require("./models/Wallet");
-require("./models/Transaction");
-require("./models/Notification");
-require("./models/SuspiciousTransaction");
-require("./models/Expense");
-require("./models/Budget");
+const startServer = async () => {
+  try {
+    dbConnected = await connectDB();
+
+    // Import Models after DB connection attempt
+    require("./models/User");
+    require("./models/Wallet");
+    require("./models/Transaction");
+    require("./models/Notification");
+    require("./models/SuspiciousTransaction");
+    require("./models/Expense");
+    require("./models/Budget");
+
+    app.listen(PORT, () => {
+      console.log(`✅ Server running on port ${PORT}`);
+      console.log(`📍 API URL: http://localhost:${PORT}/api`);
+      console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+      console.log(`✅ Database Connected`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error.message);
+    process.exit(1);
+  }
+};
 
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
@@ -48,6 +75,8 @@ app.use("/api/wallet", require("./routes/walletRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/expenses", require("./routes/expenseRoutes"));
 app.use("/api/budgets", require("./routes/budgetRoutes"));
+
+startServer();
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
