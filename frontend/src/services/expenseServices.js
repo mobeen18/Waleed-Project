@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const API_URL = process.env.REACT_APP_API_URL;
+import API_URL from "../config/api";
 
 const expenseService = {
   // Create a new expense

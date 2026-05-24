@@ -14,6 +14,6 @@ router.post("/deposit", protect, deposit);
 router.post("/withdraw", protect, withdraw);
 router.post("/transfer", protect, transfer);
 router.get("/summary", protect, getSummary);
-router.get("/wallets", listWallets);
+router.get("/wallets", protect, listWallets);
 
 module.exports = router;

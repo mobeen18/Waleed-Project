@@ -3,6 +3,16 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const connectDB = async () => {
   const remoteUri = process.env.MONGODB_URI;
+  const NODE_ENV = process.env.NODE_ENV || "development";
+  
+  // In production, MONGODB_URI is REQUIRED
+  if (NODE_ENV === "production" && !remoteUri) {
+    console.error(
+      "❌ FATAL: MONGODB_URI environment variable must be set in production"
+    );
+    process.exit(1);
+  }
+  
   const localUri = "mongodb://127.0.0.1:27017/waleed_project";
   const uriToTry = remoteUri || localUri;
 

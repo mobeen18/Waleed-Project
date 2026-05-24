@@ -7,8 +7,25 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Middleware
-app.use(express.json());
-app.use(cors());
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+
+app.use(helmet()); // Add security headers
+app.use(express.json({ limit: "10kb" }));
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: "Too many requests from this IP, please try again later.",
+  })
+);
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    credentials: true,
+    optionsSuccessStatus: 200,
+  })
+);
 
 // Database connection (non-blocking - continues even if DB fails)
 let dbConnected = false;
@@ -59,8 +76,21 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Validate critical environment variables at startup
+if (!process.env.JWT_SECRET) {
+  console.error("❌ FATAL: JWT_SECRET environment variable is not set");
+  process.exit(1);
+}
+
+if (process.env.NODE_ENV === "production" && !process.env.MONGODB_URI) {
+  console.error("❌ FATAL: MONGODB_URI must be set in production");
+  process.exit(1);
+}
+
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`📍 API URL: http://localhost:${PORT}/api`);
-  console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+  const env = process.env.NODE_ENV || "development";
+  console.log(`✅ Server running on port ${PORT} [${env.toUpperCase()}]`);
+  if (env === "development") {
+    console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+  }
 });

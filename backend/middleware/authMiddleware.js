@@ -12,16 +12,6 @@ const protect = (req, res, next) => {
 
   const token = authHeader.split(" ")[1];
 
-  // Allow demo token for development/testing
-  if (token === "demo_admin_token_12345") {
-    req.user = {
-      id: "demo_admin_user",
-      role: "admin",
-      username: "demo_admin",
-    };
-    return next();
-  }
-
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
