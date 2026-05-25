@@ -35,10 +35,14 @@ const userSchema = new mongoose.Schema(
     city: {
       type: String,
     },
+    blocked: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 module.exports = mongoose.model("User", userSchema);

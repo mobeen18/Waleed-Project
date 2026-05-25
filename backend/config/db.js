@@ -3,45 +3,31 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const connectDB = async () => {
   const remoteUri = process.env.MONGO_URI || process.env.MONGODB_URI;
-  const localUri = "mongodb://127.0.0.1:27017/waleed_project";
-  const uriToTry = remoteUri || localUri;
 
-  const connect = async (uri) => {
-    const conn = await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-  };
+  let uri = remoteUri;
 
-  const connectMemoryDb = async () => {
-    const mongod = await MongoMemoryServer.create();
-    const uri = mongod.getUri();
-    const conn = await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("✅ MongoDB Memory Server connected: running in-memory database");
-    return conn;
-  };
+  if (!uri) {
+    const mongoServer = await MongoMemoryServer.create();
+    uri = mongoServer.getUri();
+    console.log("🔄 Using in-memory MongoDB for development");
+  }
+
+  if (!uri) {
+    throw new Error("MONGODB_URI environment variable is not set");
+  }
 
   try {
-    await connect(uriToTry);
+    const conn = await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+    });
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    return true;
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
-    if (remoteUri && remoteUri !== localUri) {
-      try {
-        console.log("Trying local MongoDB fallback at mongodb://127.0.0.1:27017/waleed_project");
-        await connect(localUri);
-      } catch (fallbackError) {
-        console.error("❌ Local MongoDB fallback failed:", fallbackError.message);
-        console.log("Starting in-memory MongoDB server as fallback.");
-        await connectMemoryDb();
-      }
-    } else {
-      console.log("Starting in-memory MongoDB server as fallback.");
-      await connectMemoryDb();
-    }
+    throw error;
   }
 };
 

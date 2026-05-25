@@ -2,15 +2,10 @@ const mongoose = require("mongoose");
 const Wallet = require("../models/Wallet");
 const Transaction = require("../models/Transaction");
 
-// MediLease demo mode uses a shared fallback wallet until full auth is integrated.
-const DEFAULT_USER_ID = "000000000000000000000000";
-
 const getOrCreateWallet = async (userId) => {
-  // findOne looks for a wallet with this userId
   let wallet = await Wallet.findOne({ userId });
 
   if (!wallet) {
-    // No wallet found → create one with default balance of 0
     wallet = await Wallet.create({ userId });
   }
 
@@ -63,9 +58,16 @@ const transfer = async (req, res) => {
   try {
     const amount = parseFloat(req.body.amount);
     const toUserId = req.body.toUserId?.trim();
-    const fromUserId = req.user?.id || DEFAULT_USER_ID;
+    const fromUserId = req.user?.id;
 
     const equipment = (req.body.equipment || "").trim();
+
+    if (!fromUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
 
     if (!toUserId) {
       return res.status(400).json({
@@ -77,7 +79,8 @@ const transfer = async (req, res) => {
     if (!equipment) {
       return res.status(400).json({
         success: false,
-        message: "Please specify the equipment or lease item for this transfer.",
+        message:
+          "Please specify the equipment or lease item for this transfer.",
       });
     }
 
@@ -116,7 +119,7 @@ const transfer = async (req, res) => {
           totalWithdrawals: amount,
         },
       },
-      { new: true, session }
+      { new: true, session },
     );
 
     if (!fromWallet) {
@@ -141,7 +144,7 @@ const transfer = async (req, res) => {
         upsert: true,
         setDefaultsOnInsert: true,
         session,
-      }
+      },
     );
 
     await Transaction.insertMany(
@@ -161,7 +164,7 @@ const transfer = async (req, res) => {
           equipment,
         },
       ],
-      { session }
+      { session },
     );
 
     await session.commitTransaction();
@@ -187,10 +190,8 @@ const transfer = async (req, res) => {
 
 const deposit = async (req, res) => {
   try {
-    
     const amount = parseFloat(req.body.amount);
 
-    
     if (isNaN(amount)) {
       return res.status(400).json({
         success: false,
@@ -205,28 +206,33 @@ const deposit = async (req, res) => {
       });
     }
 
-    const userId = req.user?.id || DEFAULT_USER_ID;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
+
     let wallet = await getOrCreateWallet(userId);
 
     const updatedWallet = await Wallet.findOneAndUpdate(
-      { userId }, // Find wallet belonging to this user
+      { userId },
       {
         $inc: {
-          balance: amount,         
-          totalDeposits: amount,   
+          balance: amount,
+          totalDeposits: amount,
         },
       },
-      { new: true } 
+      { new: true },
     );
 
-   
     await Transaction.create({
       walletId: updatedWallet._id,
       type: "DEPOSIT",
       amount: amount,
     });
 
-  
     return res.status(200).json({
       success: true,
       message: `Successfully deposited $${amount.toFixed(2)}`,
@@ -263,23 +269,29 @@ const withdraw = async (req, res) => {
       });
     }
 
-    const userId = req.user?.id || DEFAULT_USER_ID;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
+
     let wallet = await getOrCreateWallet(userId);
 
     const updatedWallet = await Wallet.findOneAndUpdate(
       {
-        userId,                          
-        balance: { $gte: amount },       
+        userId,
+        balance: { $gte: amount },
       },
       {
         $inc: {
-          balance: -amount,              
-          totalWithdrawals: amount,      
+          balance: -amount,
+          totalWithdrawals: amount,
         },
       },
-      { new: true }
+      { new: true },
     );
-
 
     if (!updatedWallet) {
       const currentWallet = await Wallet.findOne({ userId });
@@ -317,10 +329,15 @@ const withdraw = async (req, res) => {
 
 const getSummary = async (req, res) => {
   try {
-    const userId = req.user?.id || DEFAULT_USER_ID;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
 
     const wallet = await getOrCreateWallet(userId);
-
 
     const recentTransactions = await Transaction.find({ walletId: wallet._id })
       .sort({ createdAt: -1 })
@@ -351,4 +368,67 @@ const getSummary = async (req, res) => {
   }
 };
 
-module.exports = { deposit, withdraw, getSummary, listWallets, transfer };
+const getTransactions = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { page = 1, limit = 20, type } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User not authenticated.",
+      });
+    }
+
+    const wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: "Wallet not found.",
+      });
+    }
+
+    const query = { walletId: wallet._id };
+    if (type) {
+      query.type = type;
+    }
+
+    const transactions = await Transaction.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await Transaction.countDocuments(query);
+
+    return res.status(200).json({
+      success: true,
+      transactions: transactions.map((tx) => ({
+        id: tx._id,
+        type: tx.type,
+        amount: tx.amount,
+        date: tx.createdAt,
+        equipment: tx.equipment || "",
+        targetWalletId: tx.targetWalletId,
+        sourceWalletId: tx.sourceWalletId,
+      })),
+      total,
+      pages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+    });
+  } catch (error) {
+    console.error("Transactions error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching transactions.",
+    });
+  }
+};
+
+module.exports = {
+  deposit,
+  withdraw,
+  getSummary,
+  listWallets,
+  transfer,
+  getTransactions,
+};

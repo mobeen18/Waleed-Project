@@ -22,7 +22,25 @@ function LoginPage() {
         setError(response.message || "Login failed. Please try again.");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Unable to connect to the server.");
+      console.error("Login error:", err);
+
+      if (err.code === "ECONNREFUSED") {
+        setError("Backend server is not running. Please try again later.");
+      } else if (err.response?.status === 404) {
+        setError(
+          "Backend API endpoint not found. Please check server configuration.",
+        );
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message === "Network Error") {
+        setError(
+          "Network error. Check your internet connection and backend server.",
+        );
+      } else {
+        setError(
+          "Unable to connect to the server. Please check your connection.",
+        );
+      }
     } finally {
       setLoading(false);
     }
