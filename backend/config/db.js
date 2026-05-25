@@ -14,9 +14,9 @@ const connectDB = async () => {
   }
   
   const localUri = "mongodb://127.0.0.1:27017/waleed_project";
-  const uriToTry = remoteUri || localUri;
+  let uri = remoteUri || localUri;
 
-  if (!uriToTry || uriToTry.includes("127.0.0.1")) {
+  if (!uri || uri.includes("127.0.0.1")) {
     // Use in-memory MongoDB for local development
     const mongoServer = await MongoMemoryServer.create();
     uri = mongoServer.getUri();

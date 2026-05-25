@@ -15,12 +15,28 @@ if (!process.env.JWT_SECRET) {
 
 // CORS Configuration
 const corsOptions = {
-  origin: [
-    "http://localhost:3000",
-    "http://localhost:5001",
-    "https://medilease.vercel.app",
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "http://localhost:5001",
+      "https://medilease.vercel.app",
+      process.env.FRONTEND_URL,
+      // Allow Vercel deployments
+      /\.vercel\.app$/,
+    ].filter(Boolean);
+    
+    // Allow requests with no origin (mobile apps, curl requests, etc)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.some(ao => {
+      if (ao instanceof RegExp) return ao.test(origin);
+      return ao === origin;
+    })) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -57,12 +73,16 @@ const startServer = async () => {
     require("./models/Expense");
     require("./models/Budget");
 
-    app.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
+    const server = app.listen(PORT, () => {
+      const env = process.env.NODE_ENV || "development";
+      console.log(`✅ Server running on port ${PORT} [${env.toUpperCase()}]`);
       console.log(`📍 API URL: http://localhost:${PORT}/api`);
-      console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-      console.log(`✅ Database Connected`);
+      if (env === "development") {
+        console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+      }
     });
+    
+    return server;
   } catch (error) {
     console.error("❌ Failed to start server:", error.message);
     process.exit(1);
@@ -115,11 +135,3 @@ if (process.env.NODE_ENV === "production" && !process.env.MONGODB_URI) {
   console.error("❌ FATAL: MONGODB_URI must be set in production");
   process.exit(1);
 }
-
-app.listen(PORT, () => {
-  const env = process.env.NODE_ENV || "development";
-  console.log(`✅ Server running on port ${PORT} [${env.toUpperCase()}]`);
-  if (env === "development") {
-    console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-  }
-});
