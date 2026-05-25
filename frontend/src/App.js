@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
+import { getToken } from "./controller/authController";
 import WalletDashboard from "./pages/WalletDashboard";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -8,18 +9,22 @@ import TransactionsPage from "./pages/TransactionsPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import AdminDashboard from "./pages/admin";
 
+const RequireAuth = ({ children }) => {
+  return getToken() ? children : <Navigate to="/login" replace />;
+};
+
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/dashboard" element={<WalletDashboard />} />
+        <Route path="/dashboard" element={<RequireAuth><WalletDashboard /></RequireAuth>} />
         <Route path="/wallet" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/transactions" element={<TransactionsPage />} />
-        <Route path="/expenses" element={<ExpensesPage />} />
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+        <Route path="/transactions" element={<RequireAuth><TransactionsPage /></RequireAuth>} />
+        <Route path="/expenses" element={<RequireAuth><ExpensesPage /></RequireAuth>} />
+        <Route path="/admin" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route
           path="*"

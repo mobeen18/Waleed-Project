@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:5001/api/auth";
+const BASE_URL = "http://localhost:5000/api/auth";
 const TOKEN_KEY = "medilease_token";
 const USER_KEY = "medilease_user";
 

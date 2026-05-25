@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const connectDB = async () => {
-  const remoteUri = process.env.MONGODB_URI;
+  const remoteUri = process.env.MONGO_URI || process.env.MONGODB_URI;
   const localUri = "mongodb://127.0.0.1:27017/waleed_project";
   const uriToTry = remoteUri || localUri;
 

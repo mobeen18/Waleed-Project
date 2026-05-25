@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getToken } from "../controller/authController";
 
-const BASE_URL = "http://localhost:5001/api/admin";
+const BASE_URL = "http://localhost:5000/api/admin";
 
 const getAuthConfig = () => {
   const token = getToken();

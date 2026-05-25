@@ -16,7 +16,8 @@
 // ============================================================
 
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { logout } from "../controller/authController";
 import { getWalletSummary, getWallets } from "../services/walletService";
 import DepositModal from "../components/DepositModal";
 import WithdrawModal from "../components/WithdrawModal";
@@ -25,6 +26,8 @@ import TransactionList from "../components/TransactionList";
 import "../styles/global.css";
 
 function WalletDashboard() {
+  const navigate = useNavigate();
+
   // ── State ──
 
   // wallet: holds { balance, totalDeposits, totalWithdrawals }
@@ -71,7 +74,8 @@ function WalletDashboard() {
       }
     } catch (err) {
       if (err.response?.status === 401) {
-        setError("Access denied. Please ensure the backend is running and try again.");
+        logout();
+        navigate("/login", { replace: true });
       } else {
         setError("Could not connect to the server. Is the backend running?");
       }
