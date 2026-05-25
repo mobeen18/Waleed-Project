@@ -136,5 +136,3 @@ app.use((err, req, res, next) => {
     message: "Internal server error",
   });
 });
-=======
->>>>>>> b0b2530b6489ee2634b418b052e2f7d4b429e7e5
