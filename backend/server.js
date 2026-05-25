@@ -1,4 +1,5 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
@@ -89,6 +90,17 @@ const startServer = async () => {
   }
 };
 
+// Validate critical environment variables at startup
+if (!process.env.JWT_SECRET) {
+  console.error("❌ FATAL: JWT_SECRET environment variable is not set");
+  process.exit(1);
+}
+
+if (process.env.NODE_ENV === "production" && !process.env.MONGODB_URI && !process.env.MONGO_URI) {
+  console.error("❌ FATAL: MONGODB_URI must be set in production");
+  process.exit(1);
+}
+
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/wallet", require("./routes/walletRoutes"));
@@ -124,14 +136,5 @@ app.use((err, req, res, next) => {
     message: "Internal server error",
   });
 });
-
-// Validate critical environment variables at startup
-if (!process.env.JWT_SECRET) {
-  console.error("❌ FATAL: JWT_SECRET environment variable is not set");
-  process.exit(1);
-}
-
-if (process.env.NODE_ENV === "production" && !process.env.MONGODB_URI) {
-  console.error("❌ FATAL: MONGODB_URI must be set in production");
-  process.exit(1);
-}
+=======
+>>>>>>> b0b2530b6489ee2634b418b052e2f7d4b429e7e5
